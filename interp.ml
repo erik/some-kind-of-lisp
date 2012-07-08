@@ -2,6 +2,7 @@ open Ast
 
 type value =
     VNil
+  | VBool of bool
   | VString of string
   | VSymbol of string
   | VKeyword of string
@@ -31,6 +32,7 @@ let args_for_vfunction = function
 
 let rec str_value = function
   | VNil -> "nil"
+  | VBool b -> string_of_bool b
   | VString s -> s
   | VSymbol s -> s
   | VKeyword k -> ":" ^ k
@@ -40,6 +42,7 @@ let rec str_value = function
 
 let str_value_type = function
   | VNil -> "nil"
+  | VBool _ -> "bool"
   | VString _ -> "string"
   | VSymbol _ -> "symbol"
   | VKeyword _ -> "keyword"
@@ -63,6 +66,11 @@ let builtins =
     | VInteger i -> i
     | t -> error (Printf.sprintf "Invalid type (got %s, expected integer)" (str_value_type t))
   in
+  let literals = [
+    "nil", VNil;
+    "true", VBool true;
+    "false", VBool false;
+  ] in
   let funcs = [
     "+", FunVar (fun args -> VInteger (List.fold_left (fun acc x -> acc + (vint x)) 0 args));
     "*", FunVar (fun args -> VInteger (List.fold_left (fun acc x -> acc * (vint x)) 1 args));
@@ -78,10 +86,14 @@ let builtins =
         | hd :: [] -> VInteger (1 / (vint hd))
         | hd :: tl -> VInteger (List.fold_left (fun acc x -> acc / (vint x)) (vint hd) tl)));
 
+    (* TODO: this should be more thorough *)
+    "eq", Fun2 (fun a b -> VBool (a = b));
+
     "print", Fun1 (fun v -> print_endline (str_value v); VNil);
     "str", FunVar (fun args -> VString (String.concat "" (List.map str_value args)))
   ] in
-  let h = Hashtbl.create 0 in
+  let h = Hashtbl.create 20 in
+  List.iter (fun (n,v) -> Hashtbl.add h n v) literals;
   List.iter (fun (n,f) -> Hashtbl.add h n (VCallable (VFunction f))) funcs;
   h
 
@@ -136,4 +148,5 @@ and val_of_exp exp =
           | Keyword k -> VKeyword k
           | Ident i -> VSymbol i)
     | ESexp s -> VList (List.map val_of_exp s)
+        (* TODO: fix this *)
     | EQuoted q -> VList [(VSymbol "quote"); val_of_exp q]
