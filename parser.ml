@@ -23,7 +23,7 @@ and expr_list exps s =
 
 and expr = parser
   | [< a = atom >] -> a
-  | [< '(Quote, _); e = expr >] -> EQuoted e
+  | [< '(Quote, _); e = expr >] -> ESexp [(EConst (Ident "quote")); e]
   | [< '(LParen, _); e = expr_list []; '(RParen, _) ?? "expected closing paren" >] -> ESexp e
 
 let parse lexbuf =
