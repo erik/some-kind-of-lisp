@@ -141,6 +141,10 @@ let builtins =
     | VSymbol s -> s
     | t -> error (Printf.sprintf "Invalid type (got %s, expected symbol)" (str_value_type t))
   in
+  let vlist = function
+    | VList l -> l
+    | t -> error (Printf.sprintf "Invalid type (got %s, expected list)" (str_value_type t))
+  in
   let literals = [
     "nil", VNil;
     "true", VBool true;
@@ -167,6 +171,13 @@ let builtins =
     "str", FunVar (fun _ args -> VString (String.concat "" (List.map str_value args)));
   ] in
   let macros = [
+    "fn", Fun2 (fun _ a b ->
+      let args = vlist a in
+      let fn = (match args with
+        | [] -> Fun0 (fun c -> unquote b c)
+        | _ -> runtime_error "Functions with arguments not yet supported (so useful, I know)")
+      in
+      VCallable (VFunction (fn, Function)));
     "quote", Fun1 (fun _ v -> v);
     "cond", FunVar (fun ctx args ->
       let rec do_cond conds =
