@@ -169,6 +169,14 @@ let builtins =
     "eq", Fun2 (fun _ a b -> VBool (a = b));
     "print", Fun1 (fun _ v -> print_endline (str_value v); VNil);
     "str", FunVar (fun _ args -> VString (String.concat "" (List.map str_value args)));
+    "do", FunVar (fun ctx args ->
+      let rec loop exps =
+        match exps with
+          | [] -> VNil
+          | hd :: [] -> unquote hd ctx
+          | hd :: tl -> let _ = unquote hd ctx in loop tl
+      in
+      loop args);
   ] in
   let macros = [
     "fn", Fun2 (fun _ a b ->
